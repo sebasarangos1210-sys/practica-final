@@ -1,0 +1,31 @@
+# qmake
+*.pro.user
+*.pro.user.*
+build-*/
+moc_*
+qrc_*
+ui_*
+Makefile*
+*.qm
+
+# Compilación
+*.o
+*.obj
+*.exe
+*.app
+*.dll
+*.so
+Debug/
+Release/
+
+# Sistema
+.DS_Store
+Thumbs.db
+*~
+*.tmp
+*.log
+
+# IDEs
+.vscode/
+.idea/
+EOF
