@@ -39,6 +39,7 @@ private:
     QLabel *speedLabel;
     QLabel *playerLabel;
     QLabel *statusLabel;
+    QLabel *bouncesLabel;  // NUEVO: Etiqueta para mostrar rebotes restantes
 
     GameEngine *engine;
 

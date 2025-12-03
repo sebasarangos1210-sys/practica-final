@@ -26,30 +26,103 @@ void GameEngine::addInfrastructure(int player, const Infrastructure& infra)
 
 void GameEngine::launchProjectile(int player, double angle, double speed)
 {
-    if (activeProjectile != nullptr) return;
+    // Si ya hay un proyectil activo, eliminarlo primero
+    if (activeProjectile != nullptr) {
+        qDebug() << "Eliminando proyectil anterior...";
+        delete activeProjectile;
+        activeProjectile = nullptr;
+    }
 
-    double startX = (player == 1) ? 50 : boxWidth - 50;
-    double startY = boxHeight - 50;
+    // Lanzar desde la posición del cañón
+    double startX = (player == 1) ? 35 : boxWidth - 35;
+    double startY = 175;  // Altura de los cañones
 
-    activeProjectile = new Projectile(startX, startY, angle, speed, projectileMass);
+    qDebug() << "Creando nuevo proyectil en posición:" << startX << "," << startY;
+    qDebug() << "Ángulo:" << angle << "Velocidad:" << speed << "Jugador:" << player;
+
+    // Pasar el jugador al constructor para que ajuste la dirección
+    activeProjectile = new Projectile(startX, startY, angle, speed, projectileMass, player);
+
+    if (activeProjectile != nullptr) {
+        qDebug() << "Proyectil creado exitosamente";
+        qDebug() << "Velocidad inicial:" << activeProjectile->getVelocity().x() << "," << activeProjectile->getVelocity().y();
+    } else {
+        qDebug() << "ERROR: No se pudo crear el proyectil";
+    }
 }
 
 bool GameEngine::update(double dt)
 {
-    if (activeProjectile == nullptr || !activeProjectile->isActive()) {
+    if (activeProjectile == nullptr) {
+        qDebug() << "ERROR: activeProjectile es nullptr";
         return false;
     }
 
+    if (!activeProjectile->isActive()) {
+        qDebug() << "Proyectil ya está inactivo";
+        return false;
+    }
+
+    // Actualizar proyectil
     activeProjectile->update(dt);
 
+    // Obtener posición DESPUÉS de actualizar
+    QPointF pos = activeProjectile->getPosition();
+
+    // Verificar límites básicos PRIMERO para evitar valores inválidos
+    if (pos.x() < -100 || pos.x() > boxWidth + 100 ||
+        pos.y() < -100 || pos.y() > boxHeight + 100) {
+        qDebug() << "Proyectil fuera de límites extremos:" << pos.x() << "," << pos.y();
+        activeProjectile->setActive(false);
+        return false;
+    }
+
+    // Verificar si el proyectil toca al rival ANTES de manejar colisiones
+    // Zona del rival del jugador 1 (centro izquierdo)
+    QRectF rivalZone1(240, 440, 60, 110);
+
+    // Zona del rival del jugador 2 (centro derecho)
+    QRectF rivalZone2(690, 440, 60, 110);
+
+    // Si el jugador actual es 1, verificar si golpea al rival 2
+    if (currentPlayer == 1 && rivalZone2.contains(pos)) {
+        qDebug() << "¡VICTORIA! El proyectil del Jugador 1 alcanzó al rival del Jugador 2";
+        gameOver = true;
+        winner = 1;
+        activeProjectile->setActive(false);
+        return false;
+    }
+
+    // Si el jugador actual es 2, verificar si golpea al rival 1
+    if (currentPlayer == 2 && rivalZone1.contains(pos)) {
+        qDebug() << "¡VICTORIA! El proyectil del Jugador 2 alcanzó al rival del Jugador 1";
+        gameOver = true;
+        winner = 2;
+        activeProjectile->setActive(false);
+        return false;
+    }
+
+    // Manejar colisiones DESPUÉS de verificar victoria
     handleWallCollisions();
+
+    // Verificar si sigue activo después de colisión con pared
+    if (!activeProjectile->isActive()) {
+        qDebug() << "Proyectil desactivado después de colisión con pared";
+        return false;
+    }
+
     handleInfrastructureCollisions();
 
-    QPointF pos = activeProjectile->getPosition();
-    if (pos.y() > boxHeight || !activeProjectile->isActive()) {
-        delete activeProjectile;
-        activeProjectile = nullptr;
-        switchTurn();
+    // Verificar si fue desactivado por rebotes
+    if (!activeProjectile->isActive()) {
+        qDebug() << "Proyectil desactivado por límite de rebotes";
+        return false;
+    }
+
+    // Verificar si el proyectil salió del área de juego normal
+    if (pos.y() > boxHeight + 50) {
+        qDebug() << "Proyectil cayó fuera del juego";
+        activeProjectile->setActive(false);
         return false;
     }
 
@@ -66,25 +139,45 @@ void GameEngine::handleWallCollisions()
 
     bool collided = false;
 
+    // Colisión con pared izquierda
     if (pos.x() - radius <= 0) {
         vel.setX(-vel.x());
         pos.setX(radius);
         collided = true;
-    } else if (pos.x() + radius >= boxWidth) {
+    }
+    // Colisión con pared derecha
+    else if (pos.x() + radius >= boxWidth) {
         vel.setX(-vel.x());
         pos.setX(boxWidth - radius);
         collided = true;
     }
 
+    // Colisión con techo
     if (pos.y() - radius <= 0) {
         vel.setY(-vel.y());
         pos.setY(radius);
         collided = true;
     }
 
+    // Colisión con piso (elástica)
+    if (pos.y() + radius >= 550) {
+        vel.setY(-vel.y() * 0.8);
+        pos.setY(550 - radius);
+        collided = true;
+    }
+
     if (collided) {
         activeProjectile->setVelocity(vel);
         activeProjectile->setPosition(pos);
+        activeProjectile->incrementBounce();  // INCREMENTAR contador de rebotes
+
+        qDebug() << "Rebote #" << activeProjectile->getBounceCount() << " - Quedan" << (3 - activeProjectile->getBounceCount()) << "rebotes";
+
+        // Si ya rebotó 3 veces, desactivar el proyectil
+        if (activeProjectile->getBounceCount() >= 3) {
+            qDebug() << "¡Proyectil alcanzó 3 rebotes! Desactivando...";
+            activeProjectile->setActive(false);
+        }
     }
 }
 
@@ -109,7 +202,7 @@ void GameEngine::handleInfrastructureCollisions()
 
             (*targetInfra)[i].takeDamage(damage);
 
-            qDebug() << "Colisión! Daño:" << damage
+            qDebug() << "Colisión con infraestructura! Daño:" << damage
                      << "Resistencia restante:" << (*targetInfra)[i].getResistance();
 
             if (side == 0 || side == 2) {
@@ -119,6 +212,15 @@ void GameEngine::handleInfrastructureCollisions()
             }
 
             activeProjectile->setVelocity(vel);
+            activeProjectile->incrementBounce();  // CONTAR rebote con infraestructura también
+
+            qDebug() << "Rebote con infraestructura #" << activeProjectile->getBounceCount();
+
+            // Si ya rebotó 3 veces, desactivar
+            if (activeProjectile->getBounceCount() >= 3) {
+                qDebug() << "¡Proyectil alcanzó 3 rebotes! Desactivando...";
+                activeProjectile->setActive(false);
+            }
 
             checkVictoryConditions();
             break;
@@ -128,6 +230,9 @@ void GameEngine::handleInfrastructureCollisions()
 
 void GameEngine::checkVictoryConditions()
 {
+    // Si ya hay un ganador (por golpear al rival), no verificar infraestructura
+    if (gameOver) return;
+
     bool player1Defeated = true;
     bool player2Defeated = true;
 
@@ -145,10 +250,13 @@ void GameEngine::checkVictoryConditions()
         }
     }
 
+    // Solo declarar victoria por destrucción de infraestructura
     if (player1Defeated) {
+        qDebug() << "¡VICTORIA! Jugador 2 destruyó toda la infraestructura del Jugador 1";
         gameOver = true;
         winner = 2;
     } else if (player2Defeated) {
+        qDebug() << "¡VICTORIA! Jugador 1 destruyó toda la infraestructura del Jugador 2";
         gameOver = true;
         winner = 1;
     }
@@ -156,6 +264,13 @@ void GameEngine::checkVictoryConditions()
 
 void GameEngine::switchTurn()
 {
+    // Limpiar el proyectil activo si existe
+    if (activeProjectile != nullptr) {
+        delete activeProjectile;
+        activeProjectile = nullptr;
+    }
+
     currentPlayer = (currentPlayer == 1) ? 2 : 1;
+    qDebug() << "Cambio de turno. Ahora juega: Jugador" << currentPlayer;
     checkVictoryConditions();
 }

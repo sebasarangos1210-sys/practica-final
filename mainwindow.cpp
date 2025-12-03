@@ -1,61 +1,3 @@
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
-
-#include <QMainWindow>
-#include <QGraphicsScene>
-#include <QGraphicsView>
-#include <QTimer>
-#include <QSlider>
-#include <QLabel>
-#include <QPushButton>
-#include "gameengine.h"
-
-class MainWindow : public QMainWindow
-{
-    Q_OBJECT
-
-public:
-    MainWindow(QWidget *parent = nullptr);
-    ~MainWindow();
-
-private slots:
-    void updateGame();
-    void launchProjectile();
-    void updateAngleLabel(int value);
-    void updateSpeedLabel(int value);
-
-private:
-    QGraphicsScene *scene;
-    QGraphicsView *view;
-    QTimer *timer;
-
-    QSlider *angleSlider;
-    QSlider *speedSlider;
-    QPushButton *launchButton;
-    QLabel *angleLabel;
-    QLabel *speedLabel;
-    QLabel *playerLabel;
-    QLabel *statusLabel;
-
-    GameEngine *engine;
-
-    QGraphicsEllipseItem *projectileItem;
-    QVector<QGraphicsRectItem*> player1InfraItems;
-    QVector<QGraphicsRectItem*> player2InfraItems;
-    QVector<QGraphicsTextItem*> resistanceLabels1;
-    QVector<QGraphicsTextItem*> resistanceLabels2;
-
-    void setupUI();
-    void setupGame();
-    void renderScene();
-    void updateResistanceLabels();
-};
-
-#endif // MAINWINDOW_H
-
-// ============================================
-// mainwindow.cpp
-// ============================================
 #include "mainwindow.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -146,13 +88,15 @@ void MainWindow::setupGame()
 {
     engine = new GameEngine(800, 600);
 
-    engine->addInfrastructure(1, Infrastructure(50, 450, 40, 100, 200));
-    engine->addInfrastructure(1, Infrastructure(100, 450, 40, 100, 200));
-    engine->addInfrastructure(1, Infrastructure(150, 450, 40, 100, 100));
+    // Infraestructura Jugador 1 (izquierda) - como en la imagen
+    engine->addInfrastructure(1, Infrastructure(170, 280, 55, 270, 200));  // Izquierda
+    engine->addInfrastructure(1, Infrastructure(170, 230, 200, 50, 100));  // Arriba (centro)
+    engine->addInfrastructure(1, Infrastructure(315, 280, 55, 270, 200));  // Derecha
 
-    engine->addInfrastructure(2, Infrastructure(610, 450, 40, 100, 200));
-    engine->addInfrastructure(2, Infrastructure(660, 450, 40, 100, 200));
-    engine->addInfrastructure(2, Infrastructure(710, 450, 40, 100, 100));
+    // Infraestructura Jugador 2 (derecha) - como en la imagen
+    engine->addInfrastructure(2, Infrastructure(620, 280, 55, 270, 200));  // Izquierda
+    engine->addInfrastructure(2, Infrastructure(620, 230, 200, 50, 100));  // Arriba (centro)
+    engine->addInfrastructure(2, Infrastructure(765, 280, 55, 270, 200));  // Derecha
 
     renderScene();
 }
@@ -165,57 +109,150 @@ void MainWindow::renderScene()
     resistanceLabels1.clear();
     resistanceLabels2.clear();
 
-    QGraphicsRectItem *ground = scene->addRect(0, 550, 800, 50, QPen(Qt::NoPen), QBrush(QColor(101, 67, 33)));
+    // Dibujar suelo
+    QGraphicsRectItem *ground = scene->addRect(0, 550, 800, 50, QPen(Qt::NoPen), QBrush(QColor(160, 82, 45)));
 
+    // Dibujar cañones/lanzadores
+    // Cañón Jugador 1 (esquina superior izquierda)
+    QGraphicsEllipseItem *cannon1 = scene->addEllipse(20, 160, 30, 30, QPen(Qt::black, 2), QBrush(QColor(70, 130, 180)));
+    QGraphicsRectItem *base1 = scene->addRect(15, 190, 40, 10, QPen(Qt::black, 2), QBrush(QColor(50, 50, 50)));
+
+    // Cañón Jugador 2 (esquina superior derecha)
+    QGraphicsEllipseItem *cannon2 = scene->addEllipse(750, 160, 30, 30, QPen(Qt::black, 2), QBrush(QColor(220, 20, 60)));
+    QGraphicsRectItem *base2 = scene->addRect(745, 190, 40, 10, QPen(Qt::black, 2), QBrush(QColor(50, 50, 50)));
+
+    // Dibujar infraestructura Jugador 1 con colores como en la imagen
     const QVector<Infrastructure>& infra1 = engine->getPlayer1Infrastructure();
+    QColor player1Colors[3] = {QColor(255, 200, 150), QColor(255, 255, 255), QColor(255, 200, 150)};
+
     for (int i = 0; i < infra1.size(); ++i) {
         if (!infra1[i].isDestroyed()) {
             QRectF rect = infra1[i].getRect();
-            QGraphicsRectItem *item = scene->addRect(rect, QPen(Qt::black, 2), QBrush(QColor(70, 130, 180)));
+            QGraphicsRectItem *item = scene->addRect(rect, QPen(Qt::black, 2), QBrush(player1Colors[i]));
             player1InfraItems.append(item);
 
             QGraphicsTextItem *label = scene->addText(QString::number((int)infra1[i].getResistance()));
-            label->setPos(rect.center().x() - 10, rect.center().y() - 10);
-            label->setDefaultTextColor(Qt::white);
+            QFont font = label->font();
+            font.setPointSize(14);
+            font.setBold(true);
+            label->setFont(font);
+            label->setPos(rect.center().x() - 15, rect.center().y() - 15);
+            label->setDefaultTextColor(Qt::black);
             resistanceLabels1.append(label);
         }
     }
 
+    // Dibujar figura "Rival" para Jugador 1
+    if (infra1.size() >= 3 && !infra1[0].isDestroyed() && !infra1[1].isDestroyed() && !infra1[2].isDestroyed()) {
+        // Cabeza
+        scene->addEllipse(255, 450, 30, 30, QPen(Qt::black, 2), QBrush(Qt::white));
+        // Cuerpo
+        scene->addLine(270, 480, 270, 510, QPen(Qt::black, 2));
+        // Brazos
+        scene->addLine(270, 490, 250, 500, QPen(Qt::black, 2));
+        scene->addLine(270, 490, 290, 500, QPen(Qt::black, 2));
+        // Piernas
+        scene->addLine(270, 510, 255, 540, QPen(Qt::black, 2));
+        scene->addLine(270, 510, 285, 540, QPen(Qt::black, 2));
+
+        // Texto "Rival"
+        QGraphicsTextItem *rivalText1 = scene->addText("Rival");
+        QFont rivalFont = rivalText1->font();
+        rivalFont.setPointSize(10);
+        rivalFont.setBold(true);
+        rivalText1->setFont(rivalFont);
+        rivalText1->setPos(250, 540);
+    }
+
+    // Dibujar infraestructura Jugador 2 con colores como en la imagen
     const QVector<Infrastructure>& infra2 = engine->getPlayer2Infrastructure();
+    QColor player2Colors[3] = {QColor(255, 200, 150), QColor(255, 255, 255), QColor(255, 200, 150)};
+
     for (int i = 0; i < infra2.size(); ++i) {
         if (!infra2[i].isDestroyed()) {
             QRectF rect = infra2[i].getRect();
-            QGraphicsRectItem *item = scene->addRect(rect, QPen(Qt::black, 2), QBrush(QColor(220, 20, 60)));
+            QGraphicsRectItem *item = scene->addRect(rect, QPen(Qt::black, 2), QBrush(player2Colors[i]));
             player2InfraItems.append(item);
 
             QGraphicsTextItem *label = scene->addText(QString::number((int)infra2[i].getResistance()));
-            label->setPos(rect.center().x() - 10, rect.center().y() - 10);
-            label->setDefaultTextColor(Qt::white);
+            QFont font = label->font();
+            font.setPointSize(14);
+            font.setBold(true);
+            label->setFont(font);
+            label->setPos(rect.center().x() - 15, rect.center().y() - 15);
+            label->setDefaultTextColor(Qt::black);
             resistanceLabels2.append(label);
         }
     }
 
+    // Dibujar figura "Rival" para Jugador 2
+    if (infra2.size() >= 3 && !infra2[0].isDestroyed() && !infra2[1].isDestroyed() && !infra2[2].isDestroyed()) {
+        // Cabeza
+        scene->addEllipse(705, 450, 30, 30, QPen(Qt::black, 2), QBrush(Qt::white));
+        // Cuerpo
+        scene->addLine(720, 480, 720, 510, QPen(Qt::black, 2));
+        // Brazos
+        scene->addLine(720, 490, 700, 500, QPen(Qt::black, 2));
+        scene->addLine(720, 490, 740, 500, QPen(Qt::black, 2));
+        // Piernas
+        scene->addLine(720, 510, 705, 540, QPen(Qt::black, 2));
+        scene->addLine(720, 510, 735, 540, QPen(Qt::black, 2));
+
+        // Texto "Rival"
+        QGraphicsTextItem *rivalText2 = scene->addText("Rival");
+        QFont rivalFont = rivalText2->font();
+        rivalFont.setPointSize(10);
+        rivalFont.setBold(true);
+        rivalText2->setFont(rivalFont);
+        rivalText2->setPos(700, 540);
+    }
+
+    // Etiquetas de jugadores
     QGraphicsTextItem *p1Label = scene->addText("JUGADOR 1");
-    p1Label->setPos(50, 580);
+    p1Label->setPos(30, 210);
     p1Label->setDefaultTextColor(QColor(70, 130, 180));
     QFont font = p1Label->font();
     font.setBold(true);
+    font.setPointSize(10);
     p1Label->setFont(font);
 
     QGraphicsTextItem *p2Label = scene->addText("JUGADOR 2");
-    p2Label->setPos(680, 580);
+    p2Label->setPos(690, 210);
     p2Label->setDefaultTextColor(QColor(220, 20, 60));
     p2Label->setFont(font);
 }
 
 void MainWindow::updateGame()
 {
-    bool projectileActive = engine->update(0.016);
+    if (!engine) {
+        qDebug() << "ERROR: engine es nullptr";
+        timer->stop();
+        return;
+    }
+
+    bool projectileActive = false;
+
+    try {
+        projectileActive = engine->update(0.016);
+    } catch (...) {
+        qDebug() << "EXCEPCIÓN capturada en update()";
+        timer->stop();
+        launchButton->setEnabled(true);
+        return;
+    }
 
     if (projectileActive) {
         const Projectile *proj = engine->getActiveProjectile();
         if (proj && proj->isActive()) {
             QPointF pos = proj->getPosition();
+
+            // Validar posición antes de usar
+            if (pos.x() < -100 || pos.x() > 900 || pos.y() < -100 || pos.y() > 700) {
+                qDebug() << "Posición inválida detectada:" << pos.x() << "," << pos.y();
+                timer->stop();
+                launchButton->setEnabled(true);
+                return;
+            }
 
             if (projectileItem == nullptr) {
                 projectileItem = scene->addEllipse(0, 0, 16, 16,
@@ -224,8 +261,22 @@ void MainWindow::updateGame()
 
             projectileItem->setPos(pos.x() - 8, pos.y() - 8);
             updateResistanceLabels();
+
+            // Actualizar contador de rebotes restantes
+            int bouncesLeft = 3 - proj->getBounceCount();
+            bouncesLabel->setText(QString("Rebotes restantes: %1").arg(bouncesLeft));
+
+            // Cambiar color según rebotes restantes
+            if (bouncesLeft == 1) {
+                bouncesLabel->setStyleSheet("font-weight: bold; font-size: 14px; color: #FF0000;");
+            } else if (bouncesLeft == 2) {
+                bouncesLabel->setStyleSheet("font-weight: bold; font-size: 14px; color: #FF6347;");
+            } else {
+                bouncesLabel->setStyleSheet("font-weight: bold; font-size: 14px; color: #32CD32;");
+            }
         }
     } else {
+        // Limpiar el proyectil visual
         if (projectileItem) {
             scene->removeItem(projectileItem);
             delete projectileItem;
@@ -235,13 +286,26 @@ void MainWindow::updateGame()
         timer->stop();
         launchButton->setEnabled(true);
 
+        // Verificar si el juego terminó
         if (engine->isGameOver()) {
-            QMessageBox::information(this, "¡Juego Terminado!",
-                                     QString("¡Jugador %1 gana!").arg(engine->getWinner()));
+            QString message;
+            if (engine->getWinner() == 1) {
+                message = "¡JUGADOR 1 GANA!\n\n¡Has alcanzado al rival enemigo!";
+            } else {
+                message = "¡JUGADOR 2 GANA!\n\n¡Has alcanzado al rival enemigo!";
+            }
+
+            QMessageBox::information(this, "¡Juego Terminado!", message);
             statusLabel->setText("Juego terminado");
+            bouncesLabel->setText("Rebotes restantes: -");
         } else {
+            // Cambiar de turno
             playerLabel->setText(QString("Turno: Jugador %1").arg(engine->getCurrentPlayer()));
             statusLabel->setText("Ajusta el ángulo y velocidad, luego presiona LANZAR");
+            bouncesLabel->setText("Rebotes restantes: 3");
+            bouncesLabel->setStyleSheet("font-weight: bold; font-size: 14px; color: #32CD32;");
+
+            // Re-renderizar la escena para actualizar resistencias
             renderScene();
         }
     }
@@ -254,11 +318,19 @@ void MainWindow::launchProjectile()
     double angle = angleSlider->value();
     double speed = speedSlider->value();
 
+    qDebug() << "=== LANZAMIENTO ===";
+    qDebug() << "Jugador:" << engine->getCurrentPlayer();
+    qDebug() << "Ángulo:" << angle;
+    qDebug() << "Velocidad:" << speed;
+
     engine->launchProjectile(engine->getCurrentPlayer(), angle, speed);
 
     launchButton->setEnabled(false);
     statusLabel->setText("Proyectil en vuelo...");
-    timer->start(16);
+    bouncesLabel->setText("Rebotes restantes: 3");
+    bouncesLabel->setStyleSheet("font-weight: bold; font-size: 14px; color: #32CD32;");
+
+    timer->start(16);  // ~60 FPS
 }
 
 void MainWindow::updateAngleLabel(int value)
