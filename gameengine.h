@@ -23,6 +23,7 @@ public:
     const QVector<Infrastructure>& getPlayer1Infrastructure() const { return player1Infrastructure; }
     const QVector<Infrastructure>& getPlayer2Infrastructure() const { return player2Infrastructure; }
     const Projectile* getActiveProjectile() const { return activeProjectile; }
+    void switchTurn();
 
 private:
     double boxWidth, boxHeight;
@@ -41,7 +42,6 @@ private:
     void handleWallCollisions();
     void handleInfrastructureCollisions();
     void checkVictoryConditions();
-    void switchTurn();
 };
 
 #endif // GAMEENGINE_H

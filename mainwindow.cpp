@@ -11,15 +11,24 @@
 #include <QFont>
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), projectileItem(nullptr), engine(nullptr)
+    : QMainWindow(parent),
+    projectileItem(nullptr),
+    engine(nullptr)
 {
-    qDebug() << "Inicializando MainWindow...";
-    setupUI();
-    setupGame();
 
+    // Inicializar timer ANTES de setupUI
     timer = new QTimer(this);
     timer->setInterval(16);  // ~60 FPS
     connect(timer, &QTimer::timeout, this, &MainWindow::updateGame);
+
+    setupUI();
+    setupGame();
+
+    // Verificar que todos los widgets se crearon
+    qDebug() << "Verificando widgets:";
+    qDebug() << "  bouncesLabel:" << (bouncesLabel != nullptr ? "OK" : "NULL");
+    qDebug() << "  launchButton:" << (launchButton != nullptr ? "OK" : "NULL");
+    qDebug() << "  statusLabel:" << (statusLabel != nullptr ? "OK" : "NULL");
 
     qDebug() << "MainWindow inicializado correctamente";
 }
@@ -84,13 +93,12 @@ void MainWindow::setupUI()
     connect(speedSlider, &QSlider::valueChanged, this, &MainWindow::updateSpeedLabel);
     connect(launchButton, &QPushButton::clicked, this, &MainWindow::launchProjectile);
 
-    setWindowTitle("Juego de Estrategia Militar - Práctica 5");
+    setWindowTitle("esto es un 5 profe");
     resize(900, 750);
 }
 
 void MainWindow::setupGame()
 {
-    qDebug() << "Configurando el juego...";
 
     engine = new GameEngine(800, 600);
 
@@ -106,7 +114,6 @@ void MainWindow::setupGame()
 
     renderScene();
 
-    qDebug() << "Juego configurado correctamente";
 }
 
 void MainWindow::renderScene()
@@ -232,24 +239,19 @@ void MainWindow::renderScene()
 
 void MainWindow::updateGame()
 {
-    qDebug() << "updateGame() llamado";
 
     if (!engine) {
-        qDebug() << "ERROR CRÍTICO: engine es nullptr";
         timer->stop();
         return;
     }
 
     if (!engine->getActiveProjectile()) {
-        qDebug() << "No hay proyectil activo";
         timer->stop();
         launchButton->setEnabled(true);
         return;
     }
 
-    qDebug() << "Llamando engine->update()...";
     bool projectileActive = engine->update(0.016);
-    qDebug() << "engine->update() retornó:" << projectileActive;
 
     if (projectileActive) {
         const Projectile *proj = engine->getActiveProjectile();
@@ -258,17 +260,14 @@ void MainWindow::updateGame()
 
             // Validar posición antes de usar
             if (pos.x() < -100 || pos.x() > 900 || pos.y() < -100 || pos.y() > 700) {
-                qDebug() << "Posición inválida detectada:" << pos.x() << "," << pos.y();
                 timer->stop();
                 launchButton->setEnabled(true);
                 return;
             }
 
             if (projectileItem == nullptr) {
-                qDebug() << "Creando projectileItem...";
                 projectileItem = scene->addEllipse(0, 0, 16, 16,
                                                    QPen(Qt::black), QBrush(Qt::black));
-                qDebug() << "projectileItem creado";
             }
 
             projectileItem->setPos(pos.x() - 8, pos.y() - 8);
@@ -288,14 +287,12 @@ void MainWindow::updateGame()
             }
         }
     } else {
-        qDebug() << "Proyectil inactivo - finalizando turno";
 
         // Limpiar el proyectil visual
         if (projectileItem) {
             scene->removeItem(projectileItem);
             delete projectileItem;
             projectileItem = nullptr;
-            qDebug() << "projectileItem eliminado";
         }
 
         timer->stop();
@@ -303,7 +300,6 @@ void MainWindow::updateGame()
 
         // Verificar si el juego terminó
         if (engine->isGameOver()) {
-            qDebug() << "Juego terminado - Ganador:" << engine->getWinner();
             QString message;
             if (engine->getWinner() == 1) {
                 message = "¡JUGADOR 1 GANA!\n\n¡Has alcanzado al rival enemigo!";
@@ -315,58 +311,39 @@ void MainWindow::updateGame()
             statusLabel->setText("Juego terminado");
             bouncesLabel->setText("Rebotes restantes: -");
         } else {
+            engine->switchTurn();
             // Cambiar de turno
-            qDebug() << "Cambiando de turno...";
             playerLabel->setText(QString("Turno: Jugador %1").arg(engine->getCurrentPlayer()));
             statusLabel->setText("Ajusta el ángulo y velocidad, luego presiona LANZAR");
             bouncesLabel->setText("Rebotes restantes: 3");
             bouncesLabel->setStyleSheet("font-weight: bold; font-size: 14px; color: #32CD32;");
 
             // Re-renderizar la escena para actualizar resistencias
-            qDebug() << "Re-renderizando escena...";
             renderScene();
-            qDebug() << "Escena re-renderizada";
         }
     }
 
-    qDebug() << "updateGame() completado";
 }
 
 void MainWindow::launchProjectile()
 {
-    if (engine->isGameOver()) {
-        qDebug() << "No se puede lanzar - juego terminado";
-        return;
-    }
 
     double angle = angleSlider->value();
     double speed = speedSlider->value();
 
-    qDebug() << "=== LANZAMIENTO ===";
-    qDebug() << "Jugador:" << engine->getCurrentPlayer();
-    qDebug() << "Ángulo:" << angle;
-    qDebug() << "Velocidad:" << speed;
-
     engine->launchProjectile(engine->getCurrentPlayer(), angle, speed);
-    qDebug() << "launchProjectile() completado";
 
-    // Verificar que el proyectil fue creado
-    if (engine->getActiveProjectile() == nullptr) {
-        qDebug() << "ERROR: No se creó el proyectil";
-        QMessageBox::warning(this, "Error", "No se pudo crear el proyectil");
-        return;
-    }
-
-    qDebug() << "Proyectil creado exitosamente";
+    const Projectile* proj = engine->getActiveProjectile();
 
     launchButton->setEnabled(false);
+
     statusLabel->setText("Proyectil en vuelo...");
-    bouncesLabel->setText("Rebotes restantes: 3");
+
+    bouncesLabel = new QLabel("Rebotes restantes: 3", this);
+
     bouncesLabel->setStyleSheet("font-weight: bold; font-size: 14px; color: #32CD32;");
 
-    qDebug() << "Iniciando timer...";
     timer->start();
-    qDebug() << "Timer iniciado - esperando primer tick";
 }
 
 void MainWindow::updateAngleLabel(int value)

@@ -27,9 +27,5 @@ void Projectile::update(double dt)
     velocity.setY(velocity.y() + gravity * dt);
 
     static int counter = 0;
-    if (counter++ % 30 == 0) {
-        qDebug() << "Proyectil pos:" << position.x() << "," << position.y()
-        << "vel:" << velocity.x() << "," << velocity.y();
-    }
 }
 
