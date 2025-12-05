@@ -16,7 +16,7 @@ MainWindow::MainWindow(QWidget *parent)
     engine(nullptr)
 {
 
-    // Inicializar timer ANTES de setupUI
+    // Inicializar timer antes de setupUI
     timer = new QTimer(this);
     timer->setInterval(16);  // ~60 FPS
     connect(timer, &QTimer::timeout, this, &MainWindow::updateGame);
@@ -127,12 +127,12 @@ void MainWindow::renderScene()
     // Dibujar suelo
     QGraphicsRectItem *ground = scene->addRect(0, 550, 800, 50, QPen(Qt::NoPen), QBrush(QColor(160, 82, 45)));
 
-    // Dibujar cañones/lanzadores
-    // Cañón Jugador 1 (esquina superior izquierda)
+    // Dibujar cannones/lanzadores
+    // Cannon Jugador 1 (esquina superior izquierda)
     QGraphicsEllipseItem *cannon1 = scene->addEllipse(20, 160, 30, 30, QPen(Qt::black, 2), QBrush(QColor(70, 130, 180)));
     QGraphicsRectItem *base1 = scene->addRect(15, 190, 40, 10, QPen(Qt::black, 2), QBrush(QColor(50, 50, 50)));
 
-    // Cañón Jugador 2 (esquina superior derecha)
+    // Cannon Jugador 2 (esquina superior derecha)
     QGraphicsEllipseItem *cannon2 = scene->addEllipse(750, 160, 30, 30, QPen(Qt::black, 2), QBrush(QColor(220, 20, 60)));
     QGraphicsRectItem *base2 = scene->addRect(745, 190, 40, 10, QPen(Qt::black, 2), QBrush(QColor(50, 50, 50)));
 
@@ -171,7 +171,7 @@ void MainWindow::renderScene()
         scene->addLine(270, 510, 285, 540, QPen(Qt::black, 2));
 
         // Texto "Rival"
-        QGraphicsTextItem *rivalText1 = scene->addText("Rival");
+        QGraphicsTextItem *rivalText1 = scene->addText("harlin");
         QFont rivalFont = rivalText1->font();
         rivalFont.setPointSize(10);
         rivalFont.setBold(true);
@@ -214,7 +214,7 @@ void MainWindow::renderScene()
         scene->addLine(720, 510, 735, 540, QPen(Qt::black, 2));
 
         // Texto "Rival"
-        QGraphicsTextItem *rivalText2 = scene->addText("Rival");
+        QGraphicsTextItem *rivalText2 = scene->addText("sebas");
         QFont rivalFont = rivalText2->font();
         rivalFont.setPointSize(10);
         rivalFont.setBold(true);
@@ -223,7 +223,7 @@ void MainWindow::renderScene()
     }
 
     // Etiquetas de jugadores
-    QGraphicsTextItem *p1Label = scene->addText("JUGADOR 1");
+    QGraphicsTextItem *p1Label = scene->addText("harlin");
     p1Label->setPos(30, 210);
     p1Label->setDefaultTextColor(QColor(70, 130, 180));
     QFont font = p1Label->font();
@@ -231,7 +231,7 @@ void MainWindow::renderScene()
     font.setPointSize(10);
     p1Label->setFont(font);
 
-    QGraphicsTextItem *p2Label = scene->addText("JUGADOR 2");
+    QGraphicsTextItem *p2Label = scene->addText("sebas");
     p2Label->setPos(690, 210);
     p2Label->setDefaultTextColor(QColor(220, 20, 60));
     p2Label->setFont(font);
@@ -337,7 +337,8 @@ void MainWindow::launchProjectile()
 
     statusLabel->setText("Proyectil en vuelo...");
 
-    bouncesLabel = new QLabel("Rebotes restantes: 3", this);
+    bouncesLabel = new QLabel("Rebotes restantes: 3");
+    //bouncesLabel = new QLabel("Rebotes restantes: 3", this);
 
     bouncesLabel->setStyleSheet("font-weight: bold; font-size: 14px; color: #32CD32;");
 
