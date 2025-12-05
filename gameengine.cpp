@@ -178,7 +178,7 @@ void GameEngine::handleInfrastructureCollisions()
         (currentPlayer == 1) ? &player2Infrastructure : &player1Infrastructure;
 
     for (int i = 0; i < targetInfra->size(); ++i) {
-        if ((*targetInfra)[i].checkCollision(pos, radius)) {
+        if ((*targetInfra)[i].checkCollision(pos, radius) && (*targetInfra)[i].getResistance() != 0) {
             QPointF prevPos = pos - vel * 0.01;
             int side = (*targetInfra)[i].getCollisionSide(pos, prevPos);
 

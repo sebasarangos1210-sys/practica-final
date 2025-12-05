@@ -158,7 +158,7 @@ void MainWindow::renderScene()
     }
 
     // Dibujar figura "Rival" para Jugador 1
-    if (infra1.size() >= 3 && !infra1[0].isDestroyed() && !infra1[1].isDestroyed() && !infra1[2].isDestroyed()) {
+    if (infra1.size() >= 3 || !infra1[0].isDestroyed() || !infra1[1].isDestroyed() || !infra1[2].isDestroyed()) {
         // Cabeza
         scene->addEllipse(255, 450, 30, 30, QPen(Qt::black, 2), QBrush(Qt::white));
         // Cuerpo
@@ -201,7 +201,7 @@ void MainWindow::renderScene()
     }
 
     // Dibujar figura "Rival" para Jugador 2
-    if (infra2.size() >= 3 && !infra2[0].isDestroyed() && !infra2[1].isDestroyed() && !infra2[2].isDestroyed()) {
+    if (infra2.size() >= 3 || !infra2[0].isDestroyed() || !infra2[1].isDestroyed() || !infra2[2].isDestroyed()) {
         // Cabeza
         scene->addEllipse(705, 450, 30, 30, QPen(Qt::black, 2), QBrush(Qt::white));
         // Cuerpo
@@ -322,12 +322,10 @@ void MainWindow::updateGame()
             renderScene();
         }
     }
-
 }
 
 void MainWindow::launchProjectile()
 {
-
     double angle = angleSlider->value();
     double speed = speedSlider->value();
 
@@ -359,12 +357,20 @@ void MainWindow::updateSpeedLabel(int value)
 void MainWindow::updateResistanceLabels()
 {
     const QVector<Infrastructure>& infra1 = engine->getPlayer1Infrastructure();
+    short int cont1 = 0;
     for (int i = 0; i < resistanceLabels1.size() && i < infra1.size(); ++i) {
-        resistanceLabels1[i]->setPlainText(QString::number((int)infra1[i].getResistance()));
+        if (infra1[i].getResistance() != 0){
+            resistanceLabels1[i]->setPlainText(QString::number((int)infra1[cont1].getResistance()));
+        }
+        cont1++;
     }
 
     const QVector<Infrastructure>& infra2 = engine->getPlayer2Infrastructure();
-    for (int i = 0; i < resistanceLabels2.size() && i < infra2.size(); ++i) {
-        resistanceLabels2[i]->setPlainText(QString::number((int)infra2[i].getResistance()));
+    short int cont2 = 0;
+    for (int i = 0; i < resistanceLabels2.size() && i < infra2.size(); i++) {
+        if (infra2[i].getResistance() != 0){
+            resistanceLabels2[i]->setPlainText(QString::number((int)infra2[cont2].getResistance()));
+        }
+        cont2++;
     }
 }
